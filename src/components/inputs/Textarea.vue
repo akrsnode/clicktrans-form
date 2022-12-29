@@ -9,7 +9,10 @@ defineEmits(["update:modelValue"]);
 </script>
 
 <template>
-  <div class="a-formInput" :class="{ '-invalid': errorMsg }">
+  <div
+    class="a-formInput"
+    :class="{ '-invalid': errorMsg || modelValue.length > maxLength }"
+  >
     <label :for="label" class="a-formInput__label">{{ label }}</label>
     <textarea
       placeholder=""
@@ -22,7 +25,9 @@ defineEmits(["update:modelValue"]);
     ></textarea>
     <div class="a-formInput__helpers">
       <span class="a-formInput__error" v-if="errorMsg">{{ errorMsg }}</span>
-      <span>{{ modelValue.length }}/{{ maxLength }}</span>
+      <span :class="{ 'a-formInput__error': modelValue.length > maxLength }"
+        >{{ modelValue.length }}/{{ maxLength }}</span
+      >
     </div>
   </div>
 </template>

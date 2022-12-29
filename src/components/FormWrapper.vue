@@ -1,19 +1,25 @@
 <script setup>
-import { ref } from "@vue/reactivity";
+import { ref, shallowRef } from "@vue/reactivity";
 import { watch } from "@vue/runtime-core";
 import Textarea from "./inputs/Textarea.vue";
 import RadioButton from "./inputs/RadioButton.vue";
 import Select from "./inputs/Select.vue";
 import TextInput from "./inputs/TextInput.vue";
 
+const textarea = shallowRef(Textarea);
+const radioButton = shallowRef(RadioButton);
+const select = shallowRef(Select);
+const textInput = shallowRef(TextInput);
+
 const fields = ref({
   description: {
     label: "Description",
-    fieldComp: Textarea,
+    fieldComp: textarea,
     maxLength: 255,
     value: "",
     errorMsg: "",
     validate: function () {
+      this.errorMsg = "";
       if (!this.value) {
         this.errorMsg = "Text is required";
         return false;
@@ -26,11 +32,12 @@ const fields = ref({
   },
   confirmation: {
     label: "Send confirmation",
-    fieldComp: RadioButton,
+    fieldComp: radioButton,
     value: null,
     errorMsg: "",
     validate: function () {
-      if (!this.value) {
+      this.errorMsg = "";
+      if (this.value === null) {
         this.errorMsg = "Text is required";
         return false;
       }
@@ -39,7 +46,7 @@ const fields = ref({
   },
   vat: {
     label: "VAT",
-    fieldComp: Select,
+    fieldComp: select,
     placeholder: "Choose VAT",
     options: [
       { value: 19, text: "19%" },
@@ -50,6 +57,7 @@ const fields = ref({
     value: null,
     errorMsg: "",
     validate: function () {
+      this.errorMsg = "";
       if (!this.value) {
         this.errorMsg = "Text is required";
         return false;
@@ -59,8 +67,9 @@ const fields = ref({
   },
   priceNetto: {
     label: "Price netto EUR",
-    fieldComp: TextInput,
+    fieldComp: textInput,
     disabled: true,
+    disabledTooltip: "First choose VAT",
     value: null,
     errorMsg: "",
     validate: function () {
@@ -74,40 +83,56 @@ const fields = ref({
   },
   priceBrutto: {
     label: "Price brutto EUR",
-    fieldComp: TextInput,
+    fieldComp: textInput,
     disabled: true,
+    disabledTooltip: "You can't edit this field",
     value: null,
   },
 });
 
+let activeValidation = false;
+
+const validateFields = () => {
+  for (const field of Object.values(fields.value)) {
+    field.validate && !field.validate();
+  }
+};
+
+const handleSubmit = () => {
+  activeValidation = true;
+  validateFields();
+  //todo: mock sending request
+};
+
+//todo: omit priceBrutto field
 watch(
-  fields,
+  () => [
+    ...Object.values(fields.value).map(
+      (item) => !item.label.includes("brutto") && item.value
+    ),
+  ],
   () => {
-    console.log("🚩: watch callback");
     const { vat, priceNetto, priceBrutto } = fields.value;
     if (vat.value && priceNetto.disabled) {
       priceNetto.disabled = false;
     } else if (priceNetto.value && priceNetto.validate()) {
-      priceBrutto.value = priceNetto.value * (vat.value / 100 + 1);
+      priceBrutto.value = +(priceNetto.value * (vat.value / 100 + 1)).toFixed(
+        2
+      );
+    } else {
+      priceBrutto.value = "";
     }
-  },
-  { deep: true }
-);
 
-let invalidForm = false;
-
-const handleSubmit = () => {
-  for (const [key, field] of Object.entries(fields.value)) {
-    if (field.validate && !field.validate()) invalidForm = true;
-    //todo: then on change revalidate
+    if (activeValidation) {
+      validateFields();
+    }
   }
-  console.log("🚩: ", "Send form to the moon");
-};
+);
 </script>
 
 <template>
-  <h1>Formularz</h1>
-  <form id="form">
+  <h1>Form</h1>
+  <form id="form" class="o-form">
     <component
       v-for="field in fields"
       :key="field.label"
@@ -128,6 +153,10 @@ const handleSubmit = () => {
 </template>
 
 <style lang="scss">
+.o-form {
+  width: 80vw;
+  max-width: 400px;
+}
 .a-form {
   &Input {
     margin-bottom: 2rem;
@@ -156,15 +185,16 @@ const handleSubmit = () => {
       }
     }
     &__error {
+      padding-right: 0.25rem;
       font-weight: 600;
       color: var(--error-color);
     }
     &__textarea,
-    &__select {
+    &__select,
+    &__textInput {
       width: 100%;
     }
     &.-invalid {
-      /* color: var(--error-color); */
       textarea,
       input {
         border-color: var(--error-color);

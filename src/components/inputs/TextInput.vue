@@ -3,13 +3,18 @@ defineProps({
   label: String,
   modelValue: [String, Number],
   disabled: Boolean,
+  disabledTooltip: String,
   errorMsg: String,
 });
 defineEmits(["update:modelValue"]);
 </script>
 
 <template>
-  <div class="a-formInput" :class="{ '-invalid': errorMsg }">
+  <div
+    class="a-formInput"
+    :class="{ '-invalid': errorMsg }"
+    :data-tip="disabledTooltip"
+  >
     <label :for="label" class="a-formInput__label">{{ label }}</label>
     <input
       :id="label"
