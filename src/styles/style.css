@@ -18,6 +18,7 @@
   --gray-color: rgba(57, 63, 77, 0.6);
   --dark-color: rgba(0, 0, 0, 0.87);
   --error-color: #f23f3a;
+  --success-color: #57c84d;
 }
 
 * {
@@ -81,6 +82,10 @@ button {
   background: none;
   border: 1px solid var(--gray-color);
   border-radius: 5px;
+}
+
+button:hover {
+  opacity: 0.8;
 }
 
 textarea:disabled,

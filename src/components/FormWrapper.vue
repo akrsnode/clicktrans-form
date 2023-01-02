@@ -1,16 +1,20 @@
 <script setup>
 import { ref, shallowRef } from "@vue/reactivity";
-import { watch } from "@vue/runtime-core";
+import { onMounted, watch } from "@vue/runtime-core";
 import Textarea from "./inputs/Textarea.vue";
 import RadioButton from "./inputs/RadioButton.vue";
 import Select from "./inputs/Select.vue";
 import TextInput from "./inputs/TextInput.vue";
+import Loader from "./Loader.vue";
+import Dialog from "./Dialog.vue";
 
 const textarea = shallowRef(Textarea);
 const radioButton = shallowRef(RadioButton);
 const select = shallowRef(Select);
 const textInput = shallowRef(TextInput);
 
+const loading = ref(true);
+const showDialog = ref(false);
 const fields = ref({
   description: {
     label: "Description",
@@ -90,21 +94,54 @@ const fields = ref({
   },
 });
 
+let dialogProps = {};
 let activeValidation = false;
 
 const validateFields = () => {
+  let isFormValid = true;
   for (const field of Object.values(fields.value)) {
-    field.validate && !field.validate();
+    if (field.validate && !field.validate()) {
+      isFormValid = false;
+    }
   }
+  return isFormValid;
 };
 
-const handleSubmit = () => {
+const mockRequest = async function () {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      Math.round(Math.random())
+        ? reject({ status: 500, statusText: "Internal Server Error" })
+        : resolve({ status: 200, statusText: "OK" });
+    }, 700);
+  });
+};
+
+const handleSubmit = async () => {
+  loading.value = true;
   activeValidation = true;
-  validateFields();
-  //todo: mock sending request
+  if (validateFields()) {
+    await mockRequest()
+      .then((res) => {
+        dialogProps = {
+          message: "Form send successfully!!!",
+          success: true,
+        };
+      })
+
+      .catch((err) => {
+        dialogProps = {
+          message: "Error sending form!!!",
+          error: true,
+        };
+      })
+      .finally(() => {
+        showDialog.value = true;
+      });
+  }
+  loading.value = false;
 };
 
-//todo: omit priceBrutto field
 watch(
   () => [
     ...Object.values(fields.value).map(
@@ -128,14 +165,23 @@ watch(
     }
   }
 );
+onMounted(() => {
+  loading.value = false;
+});
 </script>
 
 <template>
-  <h1>Form</h1>
-  <form id="form" class="o-form">
+  <Loader v-if="loading"></Loader>
+  <Dialog
+    v-else-if="showDialog"
+    v-bind="dialogProps"
+    @closeDialog="() => (showDialog = false)"
+  />
+  <form id="form" class="o-form" v-else>
+    <h1>Form</h1>
     <component
-      v-for="field in fields"
-      :key="field.label"
+      v-for="(field, key) in fields"
+      :key="key"
       :is="field.fieldComp"
       v-bind="field"
       v-model="field.value"
