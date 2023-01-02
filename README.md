@@ -6,3 +6,5 @@ This template uses Vue 3 with Vite.
 
 1. Install with `npm install`
 2. Run with `npm run dev`
+
+Build with `npm run build`
